@@ -1,0 +1,146 @@
+// leds de encendido
+int ledrojo=3;
+int ledverde=4;
+// sensor ultrasonidos
+const int TriggerPin = 5;
+const int EchoPin = 6;
+//led RGB
+int luz = A0;
+//reles
+const int rele = 7; //relé de pantalla
+const int rele2 = 8; //relé de sonido
+/*const int pulsador = 0;*/
+/*int estadoAC = 0;*/
+int inicio = 0;
+int inicio2 = 0;
+// Led RGB color
+int red = 9;
+int green = 10;
+int blue = 11;
+/*int estadoAN = 0;*/
+int pulsador = 12;
+int pulsador2 = 13;
+int btn=0;
+int btn2=0;
+/*int estado = 0;*/
+unsigned long startMillis;  //some global variables available anywhere in the program
+unsigned long currentMillis;
+const unsigned long period = 300000;  //pantalla se queda encendida hasta 5 minutos si no hay nadie
+ 
+void setup() {
+   Serial.begin(9600); //inicializamos puerto serie
+   // declaramos entradas y salidas
+   pinMode(luz, INPUT); // led color
+   pinMode(pulsador, INPUT); //pulsador encendido
+   pinMode(pulsador2, INPUT);//pulsador música 
+   pinMode(ledrojo, OUTPUT);
+   pinMode(ledverde, OUTPUT);
+   pinMode(TriggerPin, OUTPUT);
+   pinMode(EchoPin, INPUT);
+   pinMode(rele,OUTPUT);
+   pinMode(rele2,OUTPUT);
+   // Todo apagado al inicio, excepto el led rojo en pantalla de power
+   digitalWrite(ledrojo,HIGH);
+   digitalWrite(ledverde,LOW);
+   digitalWrite(rele, LOW);
+   digitalWrite(rele2, LOW);
+     }
+ 
+void loop() {
+    int valor=analogRead(luz);
+    Serial.print("Valor fotoresistencia: ");
+    Serial.println(valor);
+    /*value = digitalRead(inputPin);*/
+    // leemos los 2 pusadores
+    btn=digitalRead(pulsador);
+    btn2=digitalRead(pulsador2);
+    Serial.print("Bton1 es: ");
+    Serial.println(btn);
+    Serial.print("Bton2 es: ");
+    Serial.println(btn2);
+    Serial.println("-------");
+    /*inicio=digitalRead(pulsador);*/
+
+int cm = ping(TriggerPin, EchoPin);
+   Serial.print("Distancia: ");
+   Serial.println(cm); // Distancia del ultrasonido
+   
+   if (btn==1){
+    inicio = 1 - inicio;
+    /*delay(100);*/
+   }
+    // PULSADOR1: enciende y apaga relé1, la pantalla dependiendo de presencia
+   if (inicio == 1){ // Si el pulsador 1 está encendido
+    digitalWrite(ledverde, HIGH); // Encender el LED verde
+    digitalWrite(ledrojo,LOW); // Apago el LED rojo
+    delay(1000);
+    if (cm<=40) { // Si la distancia del ultrasonido es <= 10
+      startMillis = millis();  //empieza a contar
+      /*digitalWrite(ledverde,HIGH); // Encender el LED*/
+      digitalWrite(rele, HIGH); // Encender el relé
+  //    digitalWrite(ledrojo,LOW); // Apagar el LED rojo
+      delay(100);
+    }
+
+    if (cm>40) { // Si la distancia del ultrasonido es > 10
+      /*digitalWrite(ledrojo,LOW); // Apagar el LED*/
+      currentMillis = millis();  //get the current "time" (actually the number of milliseconds since the program started)
+  if (currentMillis - startMillis >= period)  //test whether the period has elapsed
+  {
+      startMillis = currentMillis;  //IMPORTANT to save the start time of the current LED state.
+      digitalWrite(rele, LOW); // Apagar el relé
+    //  digitalWrite(ledrojo,LOW); // Apagar el LED rojo
+      delay(200);
+  }
+    }
+    }
+    else{ // Por defecto, si el pulsador 1 está apagado
+     digitalWrite(ledverde,LOW); // Apagar el LED verde
+     digitalWrite(ledrojo,HIGH); // Encender el LED rojo
+     digitalWrite(rele, LOW); // Apagar el relé de PANTALLA
+     //inicio2=0;
+     delay(200);
+    }
+
+    // PULSADOR2: Enciende/Apaga relé de MÚSICA
+    
+      if (btn2==1){ // Si el pulsador 2 también
+          inicio2 = 1 - inicio2;
+      }
+      if (inicio2==1){
+          digitalWrite(rele2, HIGH); // Encender el segundo relé, MÚSICA
+        } else {
+          digitalWrite(rele2, LOW); // Apagar el segundo relé, MÚSICA
+        }
+        
+    Serial.print("Estado pulsador1 es: ");
+    Serial.println(inicio); // Estado del pulsador 1
+    delay(100);
+    Serial.print("Estado pulsador2 es: ");
+    Serial.println(inicio2); // Estado del pulsador 1
+    delay(100);
+   
+    if ( valor > 700 ) {
+      analogWrite(red, 0);
+      analogWrite(green, 0);
+      analogWrite(blue, 0);
+    } else {
+    analogWrite(red, random(0, 255));
+    analogWrite(green, random(0, 255));
+    analogWrite(blue, random(0, 255));
+    delay(800);
+      }   
+ 
+}
+ 
+int ping(int TriggerPin, int EchoPin) {
+   long duration, distanceCm;
+   digitalWrite(TriggerPin, LOW);  //para generar un pulso limpio ponemos a LOW 4us
+   delayMicroseconds(4);
+   digitalWrite(TriggerPin, HIGH);  //generamos Trigger (disparo) de 10us
+   delayMicroseconds(10);
+   digitalWrite(TriggerPin, LOW);
+   duration = pulseIn(EchoPin, HIGH);  //medimos el tiempo entre pulsos, en microsegundos
+   distanceCm = duration * 10 / 292/ 2;   //convertimos a distancia, en cm
+   return distanceCm;
+}
